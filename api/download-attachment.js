@@ -71,8 +71,8 @@ module.exports = async (req, res) => {
     // 获取 tenant_access_token
     const token = await getTenantAccessToken();
 
-    // 调用飞书下载接口
-    const downloadUrl = `https://open.feishu.cn/open-apis/drive/v1/medias/${fileToken}/download?extra=${encodeURIComponent(extraBase64)}`;
+    // 调用飞书下载接口（先尝试不带 extra 参数）
+    const downloadUrl = `https://open.feishu.cn/open-apis/drive/v1/medias/${fileToken}/download`;
 
     const response = await fetch(downloadUrl, {
       method: 'GET',
