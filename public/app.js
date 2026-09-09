@@ -431,8 +431,9 @@ function showState(state) {
 /**
  * 打开附件预览弹窗
  * 优先使用飞书返回的 tmp_url（临时下载链接），如果不存在再调用 API 获取
+ * 注意：飞书返回的 tmp_url 是 API URL，需要后端代理调用才能获取实际文件链接
  */
-async function openPreview(fileToken, fileName, tmpUrl = '') {
+async function openPreview(fileToken, fileName, tmpUrl = '', recordId = '') {
   if (!fileToken && !tmpUrl) return;
   // 显示弹窗
   elements.previewModal.style.display = 'flex';
@@ -441,22 +442,24 @@ async function openPreview(fileToken, fileName, tmpUrl = '') {
   // 显示加载状态
   showPreviewLoading();
   try {
-    let finalTmpUrl = tmpUrl;
+    let finalTmpUrl = '';
     let fileSize = 0;
-    // 如果没有 tmp_url，调用 API 获取
-    if (!finalTmpUrl) {
-      const response = await fetch('/api/get-attachment-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file_tokens: [fileToken] }),
-      });
-      const result = await response.json();
-      if (!result.success || !result.data || result.data.length === 0) {
-        throw new Error(result.error || '获取下载链接失败');
-      }
-      finalTmpUrl = result.data[0].tmp_download_url;
-      fileSize = result.data[0].size || 0;
+    // 调用后端 API 获取实际的临时下载链接（飞书返回的 tmp_url 是 API URL，不能直接用）
+    const response = await fetch('/api/get-attachment-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_tokens: [fileToken],
+        record_id: recordId,
+        field_id: 'fld7LCCG4u',
+      }),
+    });
+    const result = await response.json();
+    if (!result.success || !result.data || result.data.length === 0) {
+      throw new Error(result.error || '获取下载链接失败');
     }
+    finalTmpUrl = result.data[0].tmp_download_url;
+    fileSize = result.data[0].size || 0;
     const fileType = getFileType(fileName);
     // 设置下载按钮
     elements.previewDownloadBtn.href = finalTmpUrl;
@@ -566,7 +569,10 @@ function bindAttachmentEvents() {
       const fileToken = item.dataset.fileToken;
       const fileName = item.dataset.fileName;
       const tmpUrl = item.dataset.tmpUrl || '';
-      openPreview(fileToken, fileName, tmpUrl);
+      // 从父元素 card 中获取 record_id
+      const card = item.closest('.card');
+      const recordId = card ? card.dataset.recordId : '';
+      openPreview(fileToken, fileName, tmpUrl, recordId);
     });
   });
   // 非图片附件点击
@@ -575,7 +581,10 @@ function bindAttachmentEvents() {
       const fileToken = item.dataset.fileToken;
       const fileName = item.dataset.fileName;
       const tmpUrl = item.dataset.tmpUrl || '';
-      openPreview(fileToken, fileName, tmpUrl);
+      // 从父元素 card 中获取 record_id
+      const card = item.closest('.card');
+      const recordId = card ? card.dataset.recordId : '';
+      openPreview(fileToken, fileName, tmpUrl, recordId);
     });
   });
 }
