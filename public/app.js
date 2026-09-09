@@ -430,11 +430,10 @@ function showState(state) {
 // ===== 附件预览弹窗 =====
 /**
  * 打开附件预览弹窗
- * 优先使用飞书返回的 tmp_url（临时下载链接），如果不存在再调用 API 获取
- * 注意：飞书返回的 tmp_url 是 API URL，需要后端代理调用才能获取实际文件链接
+ * 使用后端代理下载接口（/api/download-attachment）直接获取文件内容
  */
 async function openPreview(fileToken, fileName, tmpUrl = '', recordId = '') {
-  if (!fileToken && !tmpUrl) return;
+  if (!fileToken) return;
   // 显示弹窗
   elements.previewModal.style.display = 'flex';
   elements.previewTitle.textContent = fileName || '附件预览';
@@ -442,37 +441,24 @@ async function openPreview(fileToken, fileName, tmpUrl = '', recordId = '') {
   // 显示加载状态
   showPreviewLoading();
   try {
-    let finalTmpUrl = '';
-    let fileSize = 0;
-    // 调用后端 API 获取实际的临时下载链接（飞书返回的 tmp_url 是 API URL，不能直接用）
-    const response = await fetch('/api/get-attachment-url', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        file_tokens: [fileToken],
-        record_id: recordId,
-        field_id: 'fld7LCCG4u',
-      }),
-    });
-    const result = await response.json();
-    if (!result.success || !result.data || result.data.length === 0) {
-      throw new Error(result.error || '获取下载链接失败');
-    }
-    finalTmpUrl = result.data[0].tmp_download_url;
-    fileSize = result.data[0].size || 0;
+    // 构建下载 URL（使用后端代理接口）
+    const downloadUrl = `/api/download-attachment?file_token=${encodeURIComponent(fileToken)}&record_id=${encodeURIComponent(recordId)}&field_id=fld7LCCG4u&file_name=${encodeURIComponent(fileName || 'attachment')}`;
+    
     const fileType = getFileType(fileName);
+    
     // 设置下载按钮
-    elements.previewDownloadBtn.href = finalTmpUrl;
+    elements.previewDownloadBtn.href = downloadUrl;
     elements.previewDownloadBtn.download = fileName || 'download';
     elements.previewDownloadBtn.style.display = 'inline-flex';
+    
     // 根据文件类型显示不同内容
     if (fileType === 'image') {
-      showPreviewImage(finalTmpUrl, fileName);
+      showPreviewImage(downloadUrl, fileName);
     } else if (fileType === 'pdf') {
-      showPreviewPdf(finalTmpUrl, fileName);
+      showPreviewPdf(downloadUrl, fileName);
     } else {
       // 其他文件类型：显示文件信息
-      showPreviewFileInfo(fileName, fileSize, fileType);
+      showPreviewFileInfo(fileName, 0, fileType);
     }
   } catch (error) {
     console.error('预览附件失败:', error);
