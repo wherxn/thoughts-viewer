@@ -1,0 +1,15 @@
+{
+  "name": "thoughts-viewer",
+  "version": "1.0.0",
+  "description": "飞书多维表格想法记录浏览页面",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
