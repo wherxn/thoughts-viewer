@@ -2,7 +2,6 @@
  * 想法记录浏览页面 - 前端交互逻辑
  * 功能：数据加载、关键词搜索、三级分类联动筛选、收藏标注筛选、卡片渲染、附件下载
  */
-
 // ===== 全局状态 =====
 let allRecords = []; // 所有记录（从飞书加载）
 let currentFilters = {
@@ -13,7 +12,6 @@ let currentFilters = {
   favorite: '',
 };
 let isLoading = false;
-
 // ===== DOM 元素引用 =====
 const elements = {
   // 登录相关
@@ -45,9 +43,7 @@ const elements = {
   previewCloseBtn: document.getElementById('previewCloseBtn'),
   previewDownloadBtn: document.getElementById('previewDownloadBtn'),
 };
-
 // ===== 工具函数 =====
-
 /**
  * 格式化文件大小
  */
@@ -57,7 +53,6 @@ function formatFileSize(bytes) {
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
-
 /**
  * 转义 HTML 特殊字符，防止 XSS
  */
@@ -67,7 +62,6 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
-
 /**
  * 高亮搜索关键词
  */
@@ -78,7 +72,6 @@ function highlightKeyword(text, keyword) {
   const regex = new RegExp(`(${escapedKeyword})`, 'gi');
   return escapedText.replace(regex, '<mark class="highlight">$1</mark>');
 }
-
 /**
  * 获取文件扩展名（小写，不含点）
  */
@@ -87,7 +80,6 @@ function getFileExtension(filename) {
   const parts = filename.split('.');
   return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
 }
-
 /**
  * 判断文件类型
  */
@@ -100,7 +92,6 @@ function getFileType(filename) {
   const docExts = ['doc', 'docx', 'ppt', 'pptx', 'txt', 'md', 'rtf'];
   const sheetExts = ['xls', 'xlsx', 'csv', 'numbers'];
   const zipExts = ['zip', 'rar', '7z', 'tar', 'gz'];
-
   if (imageExts.includes(ext)) return 'image';
   if (pdfExts.includes(ext)) return 'pdf';
   if (videoExts.includes(ext)) return 'video';
@@ -110,14 +101,12 @@ function getFileType(filename) {
   if (zipExts.includes(ext)) return 'zip';
   return 'other';
 }
-
 /**
  * 判断是否为可预览的图片
  */
 function isImageFile(filename) {
   return getFileType(filename) === 'image';
 }
-
 /**
  * 获取文件类型对应的图标SVG
  */
@@ -134,9 +123,7 @@ function getFileIconSvg(fileType) {
   };
   return icons[fileType] || icons.other;
 }
-
 // ===== 登录检测 =====
-
 /**
  * 检查当前登录状态
  * 调用 /api/auth/me，已登录显示主内容，未登录显示登录页
@@ -147,9 +134,7 @@ async function checkLoginStatus() {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
-
     const result = await response.json();
-
     if (result.success && result.loggedIn && result.user) {
       // 已登录：显示主内容，显示用户 open_id
       elements.loginView.style.display = 'none';
@@ -175,7 +160,6 @@ async function checkLoginStatus() {
     return false;
   }
 }
-
 /**
  * 显示登录错误信息
  */
@@ -185,24 +169,19 @@ function showLoginError(message) {
     elements.loginError.style.display = 'block';
   }
 }
-
 // ===== 数据加载 =====
-
 /**
  * 从后端 API 加载所有记录
  */
 async function loadRecords() {
   if (isLoading) return;
   isLoading = true;
-
   showState('loading');
-
   try {
     const response = await fetch('/api/get-records', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
-
     // 401 未登录：跳转到登录页
     if (response.status === 401) {
       elements.loginView.style.display = 'flex';
@@ -211,22 +190,16 @@ async function loadRecords() {
       isLoading = false;
       return;
     }
-
     const result = await response.json();
-
     if (!result.success) {
       throw new Error(result.error || '加载失败');
     }
-
     allRecords = result.data || [];
     console.log(`成功加载 ${allRecords.length} 条记录`);
-
     // 初始化筛选器选项
     initFilterOptions();
-
     // 应用筛选并渲染
     applyFiltersAndRender();
-
     showState('content');
   } catch (error) {
     console.error('加载记录失败:', error);
@@ -236,9 +209,7 @@ async function loadRecords() {
     isLoading = false;
   }
 }
-
 // ===== 筛选器管理 =====
-
 /**
  * 初始化所有筛选器的选项（基于全部数据）
  */
@@ -248,7 +219,6 @@ function initFilterOptions() {
   updateSelectOptions(elements.filterCategory3, getUniqueValues(allRecords, 'category3'), '全部三级');
   updateSelectOptions(elements.filterFavorite, getUniqueValues(allRecords, 'favorite'), '全部标注');
 }
-
 /**
  * 从记录数组中提取某个字段的去重值（按出现顺序）
  */
@@ -264,22 +234,18 @@ function getUniqueValues(records, field) {
   }
   return result;
 }
-
 /**
  * 更新下拉框选项，保留当前已选中的值（如果还在选项列表中）
  */
 function updateSelectOptions(selectElement, options, defaultLabel) {
   const currentValue = selectElement.value;
-
   // 清空现有选项
   selectElement.innerHTML = '';
-
   // 添加默认选项
   const defaultOption = document.createElement('option');
   defaultOption.value = '';
   defaultOption.textContent = defaultLabel;
   selectElement.appendChild(defaultOption);
-
   // 添加新选项
   for (const value of options) {
     const option = document.createElement('option');
@@ -287,7 +253,6 @@ function updateSelectOptions(selectElement, options, defaultLabel) {
     option.textContent = value;
     selectElement.appendChild(option);
   }
-
   // 恢复之前选中的值（如果还存在）
   if (currentValue && options.includes(currentValue)) {
     selectElement.value = currentValue;
@@ -295,21 +260,18 @@ function updateSelectOptions(selectElement, options, defaultLabel) {
     selectElement.value = '';
   }
 }
-
 /**
  * 根据当前筛选条件过滤记录
  */
 function filterRecords() {
   const { search, category1, category2, category3, favorite } = currentFilters;
   const searchLower = search.toLowerCase().trim();
-
   return allRecords.filter((record) => {
     // 分类筛选
     if (category1 && record.category1 !== category1) return false;
     if (category2 && record.category2 !== category2) return false;
     if (category3 && record.category3 !== category3) return false;
     if (favorite && record.favorite !== favorite) return false;
-
     // 关键词搜索（搜索标题、内容、三个分类）
     if (searchLower) {
       const searchFields = [
@@ -325,39 +287,31 @@ function filterRecords() {
       );
       if (!matched) return false;
     }
-
     return true;
   });
 }
-
 /**
  * 应用筛选条件并更新 UI（筛选器选项 + 卡片列表 + 计数）
  */
 function applyFiltersAndRender() {
   const filteredRecords = filterRecords();
-
   // 动态更新筛选器选项（基于当前过滤后的结果）
   // 注意：更新选项时要保留其他筛选器的当前选中值
   updateSelectOptions(elements.filterCategory1, getUniqueValues(filteredRecords, 'category1'), '全部一级');
   updateSelectOptions(elements.filterCategory2, getUniqueValues(filteredRecords, 'category2'), '全部二级');
   updateSelectOptions(elements.filterCategory3, getUniqueValues(filteredRecords, 'category3'), '全部三级');
   updateSelectOptions(elements.filterFavorite, getUniqueValues(filteredRecords, 'favorite'), '全部标注');
-
   // 恢复当前筛选值（因为 updateSelectOptions 可能会重置）
   elements.filterCategory1.value = currentFilters.category1;
   elements.filterCategory2.value = currentFilters.category2;
   elements.filterCategory3.value = currentFilters.category3;
   elements.filterFavorite.value = currentFilters.favorite;
-
   // 渲染卡片
   renderCards(filteredRecords);
-
   // 更新计数
   updateStats(filteredRecords.length);
 }
-
 // ===== 渲染 =====
-
 /**
  * 渲染卡片列表
  */
@@ -367,9 +321,7 @@ function renderCards(records) {
     showState('empty');
     return;
   }
-
   showState('content');
-
   const { search } = currentFilters;
   const html = records.map((record, index) => {
     // 卡片入场动画延迟，最多延迟500ms
@@ -377,17 +329,14 @@ function renderCards(records) {
     return renderCard(record, search, delay);
   }).join('');
   elements.cardList.innerHTML = html;
-
   // 绑定附件点击事件
   bindAttachmentEvents();
 }
-
 /**
  * 渲染单张卡片
  */
 function renderCard(record, keyword, delay = 0) {
   const tagsHtml = [];
-
   if (record.category1) {
     tagsHtml.push(`<span class="tag tag-cat1">${escapeHtml(record.category1)}</span>`);
   }
@@ -400,20 +349,18 @@ function renderCard(record, keyword, delay = 0) {
   if (record.favorite) {
     tagsHtml.push(`<span class="tag tag-favorite">${escapeHtml(record.favorite)}</span>`);
   }
-
   // 附件 HTML
   let attachmentsHtml = '';
   if (record.attachments && record.attachments.length > 0) {
     // 分离图片和非图片附件
     const imageFiles = record.attachments.filter(f => isImageFile(f.name));
     const otherFiles = record.attachments.filter(f => !isImageFile(f.name));
-
     // 图片缩略图
     if (imageFiles.length > 0) {
       attachmentsHtml += '<div class="attachment-thumbnails">';
       imageFiles.forEach((file) => {
         attachmentsHtml += `
-          <div class="attachment-thumbnail" data-file-token="${escapeHtml(file.file_token)}" data-file-name="${escapeHtml(file.name)}" title="${escapeHtml(file.name)}">
+          <div class="attachment-thumbnail" data-file-token="${escapeHtml(file.file_token)}" data-file-name="${escapeHtml(file.name)}" data-tmp-url="${escapeHtml(file.tmp_url || '')}" title="${escapeHtml(file.name)}">
             <div class="thumb-placeholder">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 ${getFileIconSvg('image')}
@@ -425,14 +372,13 @@ function renderCard(record, keyword, delay = 0) {
       });
       attachmentsHtml += '</div>';
     }
-
     // 非图片附件列表
     if (otherFiles.length > 0) {
       attachmentsHtml += '<div class="card-attachments">';
       otherFiles.forEach((file) => {
         const fileType = getFileType(file.name);
         attachmentsHtml += `
-          <div class="attachment-item" data-file-token="${escapeHtml(file.file_token)}" data-file-name="${escapeHtml(file.name)}">
+          <div class="attachment-item" data-file-token="${escapeHtml(file.file_token)}" data-file-name="${escapeHtml(file.name)}" data-tmp-url="${escapeHtml(file.tmp_url || '')}">
             <svg class="attachment-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               ${getFileIconSvg(fileType)}
             </svg>
@@ -444,7 +390,6 @@ function renderCard(record, keyword, delay = 0) {
       attachmentsHtml += '</div>';
     }
   }
-
   return `
     <div class="card" data-record-id="${escapeHtml(record.record_id)}" style="animation-delay: ${delay}ms;">
       <div class="card-header">
@@ -459,13 +404,11 @@ function renderCard(record, keyword, delay = 0) {
     </div>
   `;
 }
-
 /**
  * 更新统计信息
  */
 function updateStats(count) {
   elements.recordCount.innerHTML = `共 <span>${count}</span> 条记录`;
-
   // 显示当前筛选条件提示
   const activeFilters = [];
   if (currentFilters.search) activeFilters.push(`关键词"${currentFilters.search}"`);
@@ -473,67 +416,59 @@ function updateStats(count) {
   if (currentFilters.category2) activeFilters.push(currentFilters.category2);
   if (currentFilters.category3) activeFilters.push(currentFilters.category3);
   if (currentFilters.favorite) activeFilters.push(currentFilters.favorite);
-
   elements.filterHint.textContent = activeFilters.length > 0
     ? `（已筛选：${activeFilters.join(' / ')}）`
     : '';
 }
-
 // ===== 状态切换 =====
-
 function showState(state) {
   elements.loadingState.style.display = state === 'loading' ? 'flex' : 'none';
   elements.errorState.style.display = state === 'error' ? 'flex' : 'none';
   elements.emptyState.style.display = state === 'empty' ? 'flex' : 'none';
   elements.cardList.style.display = state === 'content' ? 'flex' : 'none';
 }
-
 // ===== 附件预览弹窗 =====
-
 /**
  * 打开附件预览弹窗
+ * 优先使用飞书返回的 tmp_url（临时下载链接），如果不存在再调用 API 获取
  */
-async function openPreview(fileToken, fileName) {
-  if (!fileToken) return;
-
+async function openPreview(fileToken, fileName, tmpUrl = '') {
+  if (!fileToken && !tmpUrl) return;
   // 显示弹窗
   elements.previewModal.style.display = 'flex';
   elements.previewTitle.textContent = fileName || '附件预览';
   elements.previewDownloadBtn.style.display = 'none';
-
   // 显示加载状态
   showPreviewLoading();
-
   try {
-    // 获取临时下载URL
-    const response = await fetch('/api/get-attachment-url', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file_tokens: [fileToken] }),
-    });
-
-    const result = await response.json();
-
-    if (!result.success || !result.data || result.data.length === 0) {
-      throw new Error(result.error || '获取下载链接失败');
+    let finalTmpUrl = tmpUrl;
+    let fileSize = 0;
+    // 如果没有 tmp_url，调用 API 获取
+    if (!finalTmpUrl) {
+      const response = await fetch('/api/get-attachment-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_tokens: [fileToken] }),
+      });
+      const result = await response.json();
+      if (!result.success || !result.data || result.data.length === 0) {
+        throw new Error(result.error || '获取下载链接失败');
+      }
+      finalTmpUrl = result.data[0].tmp_download_url;
+      fileSize = result.data[0].size || 0;
     }
-
-    const tmpUrl = result.data[0].tmp_download_url;
     const fileType = getFileType(fileName);
-
     // 设置下载按钮
-    elements.previewDownloadBtn.href = tmpUrl;
+    elements.previewDownloadBtn.href = finalTmpUrl;
     elements.previewDownloadBtn.download = fileName || 'download';
     elements.previewDownloadBtn.style.display = 'inline-flex';
-
     // 根据文件类型显示不同内容
     if (fileType === 'image') {
-      showPreviewImage(tmpUrl, fileName);
+      showPreviewImage(finalTmpUrl, fileName);
     } else if (fileType === 'pdf') {
-      showPreviewPdf(tmpUrl, fileName);
+      showPreviewPdf(finalTmpUrl, fileName);
     } else {
       // 其他文件类型：显示文件信息
-      const fileSize = result.data[0].size || 0;
       showPreviewFileInfo(fileName, fileSize, fileType);
     }
   } catch (error) {
@@ -541,7 +476,6 @@ async function openPreview(fileToken, fileName) {
     showPreviewError(error.message || '加载失败');
   }
 }
-
 /**
  * 显示预览加载状态
  */
@@ -553,7 +487,6 @@ function showPreviewLoading() {
     </div>
   `;
 }
-
 /**
  * 显示图片预览
  */
@@ -562,7 +495,6 @@ function showPreviewImage(url, fileName) {
     <img src="${escapeHtml(url)}" alt="${escapeHtml(fileName)}" onload="this.style.opacity=1" style="opacity:0;transition:opacity 0.3s;">
   `;
 }
-
 /**
  * 显示PDF预览
  */
@@ -571,7 +503,6 @@ function showPreviewPdf(url, fileName) {
     <iframe src="${escapeHtml(url)}" title="${escapeHtml(fileName)}"></iframe>
   `;
 }
-
 /**
  * 显示文件信息（不可预览的文件类型）
  */
@@ -585,7 +516,6 @@ function showPreviewFileInfo(fileName, fileSize, fileType) {
     other: '其他文件',
   };
   const typeName = typeNames[fileType] || '文件';
-
   elements.previewBody.innerHTML = `
     <div class="preview-file-info">
       <div class="preview-file-icon">
@@ -599,7 +529,6 @@ function showPreviewFileInfo(fileName, fileSize, fileType) {
     </div>
   `;
 }
-
 /**
  * 显示预览错误
  */
@@ -618,7 +547,6 @@ function showPreviewError(message) {
     </div>
   `;
 }
-
 /**
  * 关闭预览弹窗
  */
@@ -627,9 +555,7 @@ function closePreview() {
   elements.previewBody.innerHTML = '';
   elements.previewDownloadBtn.href = '#';
 }
-
 // ===== 事件绑定 =====
-
 /**
  * 绑定附件点击事件（打开预览弹窗）
  */
@@ -639,20 +565,20 @@ function bindAttachmentEvents() {
     item.addEventListener('click', () => {
       const fileToken = item.dataset.fileToken;
       const fileName = item.dataset.fileName;
-      openPreview(fileToken, fileName);
+      const tmpUrl = item.dataset.tmpUrl || '';
+      openPreview(fileToken, fileName, tmpUrl);
     });
   });
-
   // 非图片附件点击
   document.querySelectorAll('.attachment-item').forEach((item) => {
     item.addEventListener('click', () => {
       const fileToken = item.dataset.fileToken;
       const fileName = item.dataset.fileName;
-      openPreview(fileToken, fileName);
+      const tmpUrl = item.dataset.tmpUrl || '';
+      openPreview(fileToken, fileName, tmpUrl);
     });
   });
 }
-
 /**
  * 初始化所有事件监听
  */
@@ -662,14 +588,12 @@ function initEventListeners() {
   elements.searchInput.addEventListener('input', (e) => {
     const value = e.target.value;
     elements.clearSearchBtn.style.display = value ? 'flex' : 'none';
-
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
       currentFilters.search = value;
       applyFiltersAndRender();
     }, 200);
   });
-
   // 清除搜索
   elements.clearSearchBtn.addEventListener('click', () => {
     elements.searchInput.value = '';
@@ -677,48 +601,39 @@ function initEventListeners() {
     currentFilters.search = '';
     applyFiltersAndRender();
   });
-
   // 筛选器变化
   elements.filterCategory1.addEventListener('change', (e) => {
     currentFilters.category1 = e.target.value;
     applyFiltersAndRender();
   });
-
   elements.filterCategory2.addEventListener('change', (e) => {
     currentFilters.category2 = e.target.value;
     applyFiltersAndRender();
   });
-
   elements.filterCategory3.addEventListener('change', (e) => {
     currentFilters.category3 = e.target.value;
     applyFiltersAndRender();
   });
-
   elements.filterFavorite.addEventListener('change', (e) => {
     currentFilters.favorite = e.target.value;
     applyFiltersAndRender();
   });
-
   // 刷新按钮
   elements.refreshBtn.addEventListener('click', () => {
     loadRecords();
   });
-
   // 重试按钮
   elements.retryBtn.addEventListener('click', () => {
     loadRecords();
   });
-
   // 附件预览弹窗 - 关闭按钮
   if (elements.previewCloseBtn) {
     elements.previewCloseBtn.addEventListener('click', closePreview);
   }
-
   // 附件预览弹窗 - 点击遮罩层关闭
   if (elements.previewOverlay) {
     elements.previewOverlay.addEventListener('click', closePreview);
   }
-
   // 附件预览弹窗 - ESC键关闭
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && elements.previewModal && elements.previewModal.style.display !== 'none') {
@@ -726,9 +641,7 @@ function initEventListeners() {
     }
   });
 }
-
 // ===== 启动 =====
-
 document.addEventListener('DOMContentLoaded', () => {
   initEventListeners();
   checkLoginStatus(); // 先检查登录状态，已登录才加载数据
