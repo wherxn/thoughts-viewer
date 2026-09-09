@@ -269,12 +269,17 @@ async function getUserInfoByCode(code) {
   );
 
   const tokenData = await tokenResponse.json();
+  console.log('飞书 token 接口返回:', JSON.stringify(tokenData));
+
   if (tokenData.code !== 0) {
     throw new Error(`换取 user_access_token 失败: ${tokenData.msg} (code: ${tokenData.code})`);
   }
 
+  if (!tokenData.data || !tokenData.data.access_token) {
+    throw new Error(`token 接口返回数据异常: ${JSON.stringify(tokenData)}`);
+  }
+
   const userAccessToken = tokenData.data.access_token;
-  const openId = tokenData.data.open_id;
 
   // 第2步：用 user_access_token 获取用户信息
   const userResponse = await fetch(
@@ -288,14 +293,27 @@ async function getUserInfoByCode(code) {
   );
 
   const userData = await userResponse.json();
+  console.log('飞书 user_info 接口返回:', JSON.stringify(userData));
+
   if (userData.code !== 0) {
     throw new Error(`获取用户信息失败: ${userData.msg} (code: ${userData.code})`);
   }
 
+  if (!userData.data) {
+    throw new Error(`user_info 接口返回数据异常: ${JSON.stringify(userData)}`);
+  }
+
+  // open_id 优先从 user_info 接口获取（这个接口一定返回），其次从 token 数据获取
+  const openId = userData.data.open_id || tokenData.data.open_id;
+
+  if (!openId) {
+    throw new Error('无法获取用户 open_id，请确认已开通"获取用户基本信息"权限并发布版本');
+  }
+
   return {
     open_id: openId,
-    name: userData.data.name,
-    avatar_url: userData.data.avatar_url,
+    name: userData.data.name || tokenData.data.name || '未知用户',
+    avatar_url: userData.data.avatar_url || tokenData.data.avatar_url || '',
   };
 }
 
