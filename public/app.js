@@ -37,6 +37,13 @@ const elements = {
   retryBtn: document.getElementById('retryBtn'),
   emptyState: document.getElementById('emptyState'),
   cardList: document.getElementById('cardList'),
+  // 附件预览弹窗
+  previewModal: document.getElementById('previewModal'),
+  previewOverlay: document.getElementById('previewOverlay'),
+  previewTitle: document.getElementById('previewTitle'),
+  previewBody: document.getElementById('previewBody'),
+  previewCloseBtn: document.getElementById('previewCloseBtn'),
+  previewDownloadBtn: document.getElementById('previewDownloadBtn'),
 };
 
 // ===== 工具函数 =====
@@ -70,6 +77,62 @@ function highlightKeyword(text, keyword) {
   const escapedKeyword = escapeHtml(keyword).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(`(${escapedKeyword})`, 'gi');
   return escapedText.replace(regex, '<mark class="highlight">$1</mark>');
+}
+
+/**
+ * 获取文件扩展名（小写，不含点）
+ */
+function getFileExtension(filename) {
+  if (!filename) return '';
+  const parts = filename.split('.');
+  return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+}
+
+/**
+ * 判断文件类型
+ */
+function getFileType(filename) {
+  const ext = getFileExtension(filename);
+  const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff', 'tif'];
+  const pdfExts = ['pdf'];
+  const videoExts = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm'];
+  const audioExts = ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a'];
+  const docExts = ['doc', 'docx', 'ppt', 'pptx', 'txt', 'md', 'rtf'];
+  const sheetExts = ['xls', 'xlsx', 'csv', 'numbers'];
+  const zipExts = ['zip', 'rar', '7z', 'tar', 'gz'];
+
+  if (imageExts.includes(ext)) return 'image';
+  if (pdfExts.includes(ext)) return 'pdf';
+  if (videoExts.includes(ext)) return 'video';
+  if (audioExts.includes(ext)) return 'audio';
+  if (docExts.includes(ext)) return 'doc';
+  if (sheetExts.includes(ext)) return 'sheet';
+  if (zipExts.includes(ext)) return 'zip';
+  return 'other';
+}
+
+/**
+ * 判断是否为可预览的图片
+ */
+function isImageFile(filename) {
+  return getFileType(filename) === 'image';
+}
+
+/**
+ * 获取文件类型对应的图标SVG
+ */
+function getFileIconSvg(fileType) {
+  const icons = {
+    image: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><circle cx="8.5" cy="13.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path>',
+    pdf: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M9 13h1.5a1.5 1.5 0 0 0 0-3H9v6"></path><path d="M14 10v6"></path><path d="M14 10h2"></path><path d="M14 13h1.5a1.5 1.5 0 0 1 0 3H14"></path>',
+    video: '<rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m10 9 5 3-5 3z"></path>',
+    audio: '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>',
+    doc: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h8"></path><path d="M8 9h2"></path>',
+    sheet: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h2"></path><path d="M14 13h2"></path><path d="M8 17h2"></path><path d="M14 17h2"></path><path d="M10 13v4"></path><path d="M16 13v4"></path>',
+    zip: '<path d="M21 8v13H3V8"></path><path d="M1 3h22v5H1z"></path><path d="M10 12h4"></path>',
+    other: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path>',
+  };
+  return icons[fileType] || icons.other;
 }
 
 // ===== 登录检测 =====
@@ -308,7 +371,11 @@ function renderCards(records) {
   showState('content');
 
   const { search } = currentFilters;
-  const html = records.map((record) => renderCard(record, search)).join('');
+  const html = records.map((record, index) => {
+    // 卡片入场动画延迟，最多延迟500ms
+    const delay = Math.min(index * 30, 500);
+    return renderCard(record, search, delay);
+  }).join('');
   elements.cardList.innerHTML = html;
 
   // 绑定附件点击事件
@@ -318,7 +385,7 @@ function renderCards(records) {
 /**
  * 渲染单张卡片
  */
-function renderCard(record, keyword) {
+function renderCard(record, keyword, delay = 0) {
   const tagsHtml = [];
 
   if (record.category1) {
@@ -337,24 +404,49 @@ function renderCard(record, keyword) {
   // 附件 HTML
   let attachmentsHtml = '';
   if (record.attachments && record.attachments.length > 0) {
-    attachmentsHtml = '<div class="card-attachments">';
-    record.attachments.forEach((file, index) => {
-      attachmentsHtml += `
-        <div class="attachment-item" data-file-token="${escapeHtml(file.file_token)}" data-file-name="${escapeHtml(file.name)}">
-          <svg class="attachment-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <path d="M14 2v6h6"></path>
-          </svg>
-          <span class="attachment-name">${escapeHtml(file.name)}</span>
-          <span class="attachment-size">${formatFileSize(file.size)}</span>
-        </div>
-      `;
-    });
-    attachmentsHtml += '</div>';
+    // 分离图片和非图片附件
+    const imageFiles = record.attachments.filter(f => isImageFile(f.name));
+    const otherFiles = record.attachments.filter(f => !isImageFile(f.name));
+
+    // 图片缩略图
+    if (imageFiles.length > 0) {
+      attachmentsHtml += '<div class="attachment-thumbnails">';
+      imageFiles.forEach((file) => {
+        attachmentsHtml += `
+          <div class="attachment-thumbnail" data-file-token="${escapeHtml(file.file_token)}" data-file-name="${escapeHtml(file.name)}" title="${escapeHtml(file.name)}">
+            <div class="thumb-placeholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                ${getFileIconSvg('image')}
+              </svg>
+            </div>
+            <div class="thumb-badge">${escapeHtml(getFileExtension(file.name).toUpperCase())}</div>
+          </div>
+        `;
+      });
+      attachmentsHtml += '</div>';
+    }
+
+    // 非图片附件列表
+    if (otherFiles.length > 0) {
+      attachmentsHtml += '<div class="card-attachments">';
+      otherFiles.forEach((file) => {
+        const fileType = getFileType(file.name);
+        attachmentsHtml += `
+          <div class="attachment-item" data-file-token="${escapeHtml(file.file_token)}" data-file-name="${escapeHtml(file.name)}">
+            <svg class="attachment-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              ${getFileIconSvg(fileType)}
+            </svg>
+            <span class="attachment-name">${escapeHtml(file.name)}</span>
+            <span class="attachment-size">${formatFileSize(file.size)}</span>
+          </div>
+        `;
+      });
+      attachmentsHtml += '</div>';
+    }
   }
 
   return `
-    <div class="card" data-record-id="${escapeHtml(record.record_id)}">
+    <div class="card" data-record-id="${escapeHtml(record.record_id)}" style="animation-delay: ${delay}ms;">
       <div class="card-header">
         <div class="card-tags">${tagsHtml.join('')}</div>
         <div class="card-meta">
@@ -396,56 +488,167 @@ function showState(state) {
   elements.cardList.style.display = state === 'content' ? 'flex' : 'none';
 }
 
+// ===== 附件预览弹窗 =====
+
+/**
+ * 打开附件预览弹窗
+ */
+async function openPreview(fileToken, fileName) {
+  if (!fileToken) return;
+
+  // 显示弹窗
+  elements.previewModal.style.display = 'flex';
+  elements.previewTitle.textContent = fileName || '附件预览';
+  elements.previewDownloadBtn.style.display = 'none';
+
+  // 显示加载状态
+  showPreviewLoading();
+
+  try {
+    // 获取临时下载URL
+    const response = await fetch('/api/get-attachment-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file_tokens: [fileToken] }),
+    });
+
+    const result = await response.json();
+
+    if (!result.success || !result.data || result.data.length === 0) {
+      throw new Error(result.error || '获取下载链接失败');
+    }
+
+    const tmpUrl = result.data[0].tmp_download_url;
+    const fileType = getFileType(fileName);
+
+    // 设置下载按钮
+    elements.previewDownloadBtn.href = tmpUrl;
+    elements.previewDownloadBtn.download = fileName || 'download';
+    elements.previewDownloadBtn.style.display = 'inline-flex';
+
+    // 根据文件类型显示不同内容
+    if (fileType === 'image') {
+      showPreviewImage(tmpUrl, fileName);
+    } else if (fileType === 'pdf') {
+      showPreviewPdf(tmpUrl, fileName);
+    } else {
+      // 其他文件类型：显示文件信息
+      const fileSize = result.data[0].size || 0;
+      showPreviewFileInfo(fileName, fileSize, fileType);
+    }
+  } catch (error) {
+    console.error('预览附件失败:', error);
+    showPreviewError(error.message || '加载失败');
+  }
+}
+
+/**
+ * 显示预览加载状态
+ */
+function showPreviewLoading() {
+  elements.previewBody.innerHTML = `
+    <div class="preview-loading">
+      <div class="loading-spinner"></div>
+      <p>正在加载附件...</p>
+    </div>
+  `;
+}
+
+/**
+ * 显示图片预览
+ */
+function showPreviewImage(url, fileName) {
+  elements.previewBody.innerHTML = `
+    <img src="${escapeHtml(url)}" alt="${escapeHtml(fileName)}" onload="this.style.opacity=1" style="opacity:0;transition:opacity 0.3s;">
+  `;
+}
+
+/**
+ * 显示PDF预览
+ */
+function showPreviewPdf(url, fileName) {
+  elements.previewBody.innerHTML = `
+    <iframe src="${escapeHtml(url)}" title="${escapeHtml(fileName)}"></iframe>
+  `;
+}
+
+/**
+ * 显示文件信息（不可预览的文件类型）
+ */
+function showPreviewFileInfo(fileName, fileSize, fileType) {
+  const typeNames = {
+    video: '视频文件',
+    audio: '音频文件',
+    doc: '文档文件',
+    sheet: '表格文件',
+    zip: '压缩文件',
+    other: '其他文件',
+  };
+  const typeName = typeNames[fileType] || '文件';
+
+  elements.previewBody.innerHTML = `
+    <div class="preview-file-info">
+      <div class="preview-file-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          ${getFileIconSvg(fileType)}
+        </svg>
+      </div>
+      <div class="preview-file-name">${escapeHtml(fileName)}</div>
+      <div class="preview-file-size">${typeName} · ${formatFileSize(fileSize)}</div>
+      <div class="preview-file-hint">此文件类型暂不支持在线预览，请点击右上角下载按钮下载后查看</div>
+    </div>
+  `;
+}
+
+/**
+ * 显示预览错误
+ */
+function showPreviewError(message) {
+  elements.previewBody.innerHTML = `
+    <div class="preview-file-info">
+      <div class="preview-file-icon" style="background: linear-gradient(135deg, #f53f3f 0%, #d9363e 100%);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 8v4"></path>
+          <path d="M12 16h.01"></path>
+        </svg>
+      </div>
+      <div class="preview-file-name">加载失败</div>
+      <div class="preview-file-size">${escapeHtml(message)}</div>
+    </div>
+  `;
+}
+
+/**
+ * 关闭预览弹窗
+ */
+function closePreview() {
+  elements.previewModal.style.display = 'none';
+  elements.previewBody.innerHTML = '';
+  elements.previewDownloadBtn.href = '#';
+}
+
 // ===== 事件绑定 =====
 
 /**
- * 绑定附件点击事件（获取临时下载链接并下载）
+ * 绑定附件点击事件（打开预览弹窗）
  */
 function bindAttachmentEvents() {
-  document.querySelectorAll('.attachment-item').forEach((item) => {
-    item.addEventListener('click', async () => {
+  // 图片缩略图点击
+  document.querySelectorAll('.attachment-thumbnail').forEach((item) => {
+    item.addEventListener('click', () => {
       const fileToken = item.dataset.fileToken;
       const fileName = item.dataset.fileName;
+      openPreview(fileToken, fileName);
+    });
+  });
 
-      if (!fileToken) return;
-
-      // 显示加载状态
-      const originalContent = item.innerHTML;
-      item.innerHTML = '<span style="font-size:13px;color:#8f959e;">正在获取下载链接...</span>';
-
-      try {
-        const response = await fetch('/api/get-attachment-url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ file_tokens: [fileToken] }),
-        });
-
-        const result = await response.json();
-
-        if (!result.success || !result.data || result.data.length === 0) {
-          throw new Error(result.error || '获取下载链接失败');
-        }
-
-        const tmpUrl = result.data[0].tmp_download_url;
-
-        // 触发下载
-        const link = document.createElement('a');
-        link.href = tmpUrl;
-        link.download = fileName || 'download';
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // 恢复原始内容
-        item.innerHTML = originalContent;
-      } catch (error) {
-        console.error('下载附件失败:', error);
-        item.innerHTML = `<span style="font-size:13px;color:#f53f3f;">下载失败：${error.message}</span>`;
-        setTimeout(() => {
-          item.innerHTML = originalContent;
-        }, 3000);
-      }
+  // 非图片附件点击
+  document.querySelectorAll('.attachment-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      const fileToken = item.dataset.fileToken;
+      const fileName = item.dataset.fileName;
+      openPreview(fileToken, fileName);
     });
   });
 }
@@ -504,6 +707,23 @@ function initEventListeners() {
   // 重试按钮
   elements.retryBtn.addEventListener('click', () => {
     loadRecords();
+  });
+
+  // 附件预览弹窗 - 关闭按钮
+  if (elements.previewCloseBtn) {
+    elements.previewCloseBtn.addEventListener('click', closePreview);
+  }
+
+  // 附件预览弹窗 - 点击遮罩层关闭
+  if (elements.previewOverlay) {
+    elements.previewOverlay.addEventListener('click', closePreview);
+  }
+
+  // 附件预览弹窗 - ESC键关闭
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && elements.previewModal && elements.previewModal.style.display !== 'none') {
+      closePreview();
+    }
   });
 }
 
