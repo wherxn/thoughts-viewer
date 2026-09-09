@@ -105,7 +105,8 @@ module.exports = async (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=3600');
 
     // 把飞书返回的文件内容流式传输给前端
-    const buffer = await response.buffer();
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     res.status(200).end(buffer);
 
   } catch (error) {
