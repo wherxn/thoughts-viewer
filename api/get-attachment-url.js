@@ -4,7 +4,7 @@
  * 临时链接有效期内可以直接下载，文件从飞书服务器直接传输，不经过我们的后端
  */
 
-const { callFeishuApi, getCurrentUser } = require('./_utils');
+const { callFeishuApi, getCurrentUser, FEISHU_TABLE_ID } = require('./_utils');
 
 module.exports = async (req, res) => {
   try {
@@ -44,9 +44,17 @@ module.exports = async (req, res) => {
     }
 
     // 调用飞书 API 批量获取临时下载链接
-    // 注意：此接口是 GET 请求，数组参数用重复参数名的形式传递（file_tokens=token1&file_tokens=token2）
+    // 注意1：此接口是 GET 请求，数组参数用重复参数名的形式传递（file_tokens=token1&file_tokens=token2）
+    // 注意2：多维表格附件需要额外的 extra 参数鉴权（Base64 编码的 JSON，包含 tableId）
+    const extraObj = {
+      bitablePerm: {
+        tableId: FEISHU_TABLE_ID,
+        rev: 0,
+      },
+    };
+    const extraBase64 = Buffer.from(JSON.stringify(extraObj)).toString('base64');
     const queryParams = fileTokens.map(token => `file_tokens=${encodeURIComponent(token)}`).join('&');
-    const path = `/drive/v1/medias/batch_get_tmp_download_url?${queryParams}`;
+    const path = `/drive/v1/medias/batch_get_tmp_download_url?${queryParams}&extra=${encodeURIComponent(extraBase64)}`;
     const data = await callFeishuApi(path, {
       method: 'GET',
     });
