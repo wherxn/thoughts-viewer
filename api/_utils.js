@@ -56,7 +56,9 @@ async function getTenantAccessToken() {
 // ========== 飞书 API 通用调用 ==========
 async function callFeishuApi(url, options = {}) {
   const token = await getTenantAccessToken();
-  const response = await fetch(url, {
+  // 如果是相对路径，自动拼接完整 URL（飞书开放平台 API 基础地址）
+  const fullUrl = url.startsWith('http') ? url : `https://open.feishu.cn/open-apis${url}`;
+  const response = await fetch(fullUrl, {
     ...options,
     headers: {
       'Authorization': `Bearer ${token}`,
