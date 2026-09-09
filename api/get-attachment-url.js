@@ -44,9 +44,9 @@ module.exports = async (req, res) => {
     }
 
     // 调用飞书 API 批量获取临时下载链接
-    // 注意：此接口是 GET 请求，参数通过 query string 传递（逗号分隔的 file_tokens）
-    const fileTokensParam = fileTokens.join(',');
-    const path = `/drive/v1/medias/batch_get_tmp_download_url?file_tokens=${encodeURIComponent(fileTokensParam)}`;
+    // 注意：此接口是 GET 请求，数组参数用重复参数名的形式传递（file_tokens=token1&file_tokens=token2）
+    const queryParams = fileTokens.map(token => `file_tokens=${encodeURIComponent(token)}`).join('&');
+    const path = `/drive/v1/medias/batch_get_tmp_download_url?${queryParams}`;
     const data = await callFeishuApi(path, {
       method: 'GET',
     });
