@@ -7,11 +7,45 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <!-- 登录页面 -->
+  <div id="loginView" class="login-view">
+    <div class="login-card">
+      <div class="login-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <path d="M14 2v6h6"></path>
+          <path d="M9 15h6"></path>
+          <path d="M9 11h6"></path>
+        </svg>
+      </div>
+      <h1 class="login-title">想法记录</h1>
+      <p class="login-subtitle">快速检索与浏览你的每一个想法</p>
+      <p class="login-desc">此页面需要飞书账号授权登录</p>
+      <a href="/api/auth/login" class="login-btn">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+        </svg>
+        用飞书登录
+      </a>
+      <p id="loginError" class="login-error" style="display:none;"></p>
+    </div>
+  </div>
+
+  <!-- 主内容（登录后显示） -->
+  <div id="mainView" style="display:none;">
   <div class="container">
     <!-- 页面标题 -->
     <header class="page-header">
-      <h1 class="page-title">想法记录</h1>
-      <p class="page-subtitle">快速检索与浏览你的每一个想法</p>
+      <div class="header-left">
+        <h1 class="page-title">想法记录</h1>
+        <p class="page-subtitle">快速检索与浏览你的每一个想法</p>
+      </div>
+      <div class="header-right">
+        <div class="user-info">
+          <span id="userOpenId" class="user-open-id"></span>
+          <a href="/api/auth/logout" class="logout-btn">退出登录</a>
+        </div>
+      </div>
     </header>
 
     <!-- 搜索框 -->
@@ -113,6 +147,7 @@
 
     <!-- 卡片列表 -->
     <div id="cardList" class="card-list"></div>
+  </div>
   </div>
 
   <script src="/app.js"></script>

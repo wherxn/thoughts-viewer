@@ -16,6 +16,12 @@ let isLoading = false;
 
 // ===== DOM 元素引用 =====
 const elements = {
+  // 登录相关
+  loginView: document.getElementById('loginView'),
+  mainView: document.getElementById('mainView'),
+  userOpenId: document.getElementById('userOpenId'),
+  loginError: document.getElementById('loginError'),
+  // 主内容
   searchInput: document.getElementById('searchInput'),
   clearSearchBtn: document.getElementById('clearSearchBtn'),
   filterCategory1: document.getElementById('filterCategory1'),
@@ -66,6 +72,57 @@ function highlightKeyword(text, keyword) {
   return escapedText.replace(regex, '<mark class="highlight">$1</mark>');
 }
 
+// ===== 登录检测 =====
+
+/**
+ * 检查当前登录状态
+ * 调用 /api/auth/me，已登录显示主内容，未登录显示登录页
+ */
+async function checkLoginStatus() {
+  try {
+    const response = await fetch('/api/auth/me', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const result = await response.json();
+
+    if (result.success && result.loggedIn && result.user) {
+      // 已登录：显示主内容，显示用户 open_id
+      elements.loginView.style.display = 'none';
+      elements.mainView.style.display = 'block';
+      if (elements.userOpenId) {
+        elements.userOpenId.textContent = result.user.open_id;
+        elements.userOpenId.title = result.user.open_id;
+      }
+      // 登录成功后加载数据
+      loadRecords();
+      return true;
+    } else {
+      // 未登录：显示登录页
+      elements.loginView.style.display = 'flex';
+      elements.mainView.style.display = 'none';
+      return false;
+    }
+  } catch (error) {
+    console.error('检查登录状态失败:', error);
+    // 检查失败也显示登录页
+    elements.loginView.style.display = 'flex';
+    elements.mainView.style.display = 'none';
+    return false;
+  }
+}
+
+/**
+ * 显示登录错误信息
+ */
+function showLoginError(message) {
+  if (elements.loginError) {
+    elements.loginError.textContent = message;
+    elements.loginError.style.display = 'block';
+  }
+}
+
 // ===== 数据加载 =====
 
 /**
@@ -82,6 +139,15 @@ async function loadRecords() {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
+
+    // 401 未登录：跳转到登录页
+    if (response.status === 401) {
+      elements.loginView.style.display = 'flex';
+      elements.mainView.style.display = 'none';
+      showLoginError('登录已过期，请重新登录');
+      isLoading = false;
+      return;
+    }
 
     const result = await response.json();
 
@@ -445,5 +511,5 @@ function initEventListeners() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initEventListeners();
-  loadRecords();
+  checkLoginStatus(); // 先检查登录状态，已登录才加载数据
 });

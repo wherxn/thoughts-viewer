@@ -4,10 +4,21 @@
  * 临时链接有效期内可以直接下载，文件从飞书服务器直接传输，不经过我们的后端
  */
 
-const { callFeishuApi } = require('./_utils');
+const { callFeishuApi, getCurrentUser } = require('./_utils');
 
 module.exports = async (req, res) => {
   try {
+    // 登录验证：未登录返回 401
+    const user = getCurrentUser(req);
+    if (!user) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.status(401).json({
+        success: false,
+        error: '未登录，请先登录',
+      });
+      return;
+    }
+
     // 从请求体中获取 file_tokens
     let fileTokens = [];
 

@@ -447,3 +447,177 @@ body {
     min-width: 100%;
   }
 }
+
+/* ===== 登录页面 ===== */
+.login-view {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.login-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 48px 40px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  max-width: 400px;
+  width: 100%;
+}
+
+.login-logo {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.login-logo svg {
+  width: 36px;
+  height: 36px;
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2329;
+  margin-bottom: 8px;
+}
+
+.login-subtitle {
+  font-size: 15px;
+  color: #646a73;
+  margin-bottom: 8px;
+}
+
+.login-desc {
+  font-size: 13px;
+  color: #8f959e;
+  margin-bottom: 32px;
+}
+
+.login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #3370ff 0%, #2b5fd9 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(51, 112, 255, 0.35);
+}
+
+.login-btn:active {
+  transform: translateY(0);
+}
+
+.login-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.login-error {
+  margin-top: 16px;
+  font-size: 13px;
+  color: #f53f3f;
+}
+
+/* ===== 页面头部用户信息 ===== */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header-left {
+  flex: 1;
+}
+
+.header-right {
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-open-id {
+  font-size: 12px;
+  color: #8f959e;
+  background: #f2f3f5;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: monospace;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logout-btn {
+  font-size: 13px;
+  color: #8f959e;
+  text-decoration: none;
+  padding: 6px 12px;
+  border: 1px solid #e5e6eb;
+  border-radius: 8px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.logout-btn:hover {
+  color: #f53f3f;
+  border-color: #f53f3f;
+  background: #fff0f0;
+}
+
+/* ===== 搜索关键词高亮 ===== */
+mark.highlight {
+  background-color: #fff3cd;
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 3px;
+}
+
+/* ===== 登录页面响应式 ===== */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 36px 24px;
+  }
+
+  .login-title {
+    font-size: 24px;
+  }
+
+  .page-header {
+    flex-direction: column;
+  }
+
+  .header-right {
+    margin-left: 0;
+    margin-top: 12px;
+  }
+}

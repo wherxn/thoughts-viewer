@@ -3,10 +3,21 @@
  * 分页获取（飞书 API 单次最多 100 条），然后合并返回
  */
 
-const { FEISHU_CONFIG, callFeishuApi } = require('./_utils');
+const { FEISHU_CONFIG, callFeishuApi, getCurrentUser } = require('./_utils');
 
 module.exports = async (req, res) => {
   try {
+    // 登录验证：未登录返回 401
+    const user = getCurrentUser(req);
+    if (!user) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.status(401).json({
+        success: false,
+        error: '未登录，请先登录',
+      });
+      return;
+    }
+
     const allRecords = [];
     let pageToken = null;
     let hasMore = true;
