@@ -44,11 +44,11 @@ module.exports = async (req, res) => {
     }
 
     // 调用飞书 API 批量获取临时下载链接
-    const data = await callFeishuApi('/drive/v1/medias/batch_get_tmp_download_url', {
-      method: 'POST',
-      body: JSON.stringify({
-        file_tokens: fileTokens,
-      }),
+    // 注意：此接口是 GET 请求，参数通过 query string 传递（逗号分隔的 file_tokens）
+    const fileTokensParam = fileTokens.join(',');
+    const path = `/drive/v1/medias/batch_get_tmp_download_url?file_tokens=${encodeURIComponent(fileTokensParam)}`;
+    const data = await callFeishuApi(path, {
+      method: 'GET',
     });
 
     // 格式化返回结果
