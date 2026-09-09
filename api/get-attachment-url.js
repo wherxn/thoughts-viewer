@@ -110,9 +110,16 @@ module.exports = async (req, res) => {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache');
 
+    // 调试模式：返回完整的飞书 API 响应
     res.status(200).json({
       success: true,
       data: tmpUrls,
+      debug: {
+        extraObj: extraObj,
+        extraBase64: extraBase64,
+        path: path,
+        feishuResponse: data,
+      },
     });
   } catch (error) {
     console.error('获取附件下载链接失败:', error);
