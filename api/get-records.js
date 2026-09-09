@@ -2,7 +2,6 @@
  * 获取想法记录表的所有记录
  * 分页获取（飞书 API 单次最多 100 条），然后合并返回
  */
-
 const { FEISHU_CONFIG, callFeishuApi, getCurrentUser } = require('./_utils');
 
 module.exports = async (req, res) => {
@@ -25,13 +24,10 @@ module.exports = async (req, res) => {
     // 分页获取所有记录
     while (hasMore) {
       const path = `/bitable/v1/apps/${FEISHU_CONFIG.baseToken}/tables/${FEISHU_CONFIG.tableId}/records?page_size=100${pageToken ? `&page_token=${pageToken}` : ''}`;
-
       const data = await callFeishuApi(path, { method: 'GET' });
-
       if (data.data && data.data.items) {
         allRecords.push(...data.data.items);
       }
-
       hasMore = data.data && data.data.has_more;
       pageToken = data.data && data.data.page_token;
     }
@@ -40,13 +36,15 @@ module.exports = async (req, res) => {
     const formattedRecords = allRecords.map((record) => {
       const fields = record.fields || {};
 
-      // 处理附件字段（飞书返回的是数组，每个元素包含 file_token, name, size 等）
+      // 处理附件字段（飞书返回的是数组，每个元素包含 file_token, name, size, tmp_url 等）
+      // 注意：tmp_url 是飞书返回的临时下载链接，有效期 24 小时，可以直接用于预览和下载
       const attachments = Array.isArray(fields['附件'])
         ? fields['附件'].map((file) => ({
             file_token: file.file_token,
             name: file.name,
             size: file.size,
             type: file.type || '',
+            tmp_url: file.tmp_url || '',
           }))
         : [];
 
