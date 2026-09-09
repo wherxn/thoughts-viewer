@@ -12,6 +12,14 @@ const FEISHU_APP_SECRET = process.env.FEISHU_APP_SECRET || '';
 const FEISHU_BASE_TOKEN = process.env.FEISHU_BASE_TOKEN || 'WfIrbiQAYaITeSsR5uGcmnjHnCb';
 const FEISHU_TABLE_ID = process.env.FEISHU_TABLE_ID || 'tblQwBZZyVeCrY2A';
 
+// 兼容旧代码的配置对象（get-records.js 等旧文件引用 FEISHU_CONFIG.baseToken）
+const FEISHU_CONFIG = {
+  baseToken: FEISHU_BASE_TOKEN,
+  tableId: FEISHU_TABLE_ID,
+  appId: FEISHU_APP_ID,
+  appSecret: FEISHU_APP_SECRET,
+};
+
 // 允许访问的用户白名单（open_id 列表，逗号分隔）
 // 为空时允许所有飞书用户登录
 const ALLOWED_USER_IDS = (process.env.ALLOWED_USER_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -194,6 +202,7 @@ module.exports = {
   FEISHU_APP_SECRET,
   FEISHU_BASE_TOKEN,
   FEISHU_TABLE_ID,
+  FEISHU_CONFIG,
   getTenantAccessToken,
   callFeishuApi,
   parseCookies,
